@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Model to API — A Practical AI Engineering Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #16161f;
+    --border: #1e1e2e;
+    --accent: #7c6aff;
+    --accent2: #ff6a9b;
+    --accent3: #6affd4;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --code-bg: #0d0d15;
+    --tag-green: #1a3a2a;
+    --tag-green-text: #4ade80;
+    --tag-blue: #1a2540;
+    --tag-blue-text: #60a5fa;
+    --tag-purple: #2a1a40;
+    --tag-purple-text: #c084fc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    overflow: hidden;
+    padding: 80px 40px 72px;
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,106,255,0.18) 0%, transparent 70%);
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .header-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(124,106,255,0.12);
+    border: 1px solid rgba(124,106,255,0.3);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 560px;
+    margin-bottom: 36px;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .meta-item svg { opacity: 0.5; }
+
+  /* LAYOUT */
+  .content {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 64px 40px 120px;
+  }
+
+  /* PHASE HEADER */
+  .phase {
+    margin-bottom: 64px;
+  }
+
+  .phase-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(124,106,255,0.1);
+    border: 1px solid rgba(124,106,255,0.2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* STEPS */
+  .step {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 0 20px;
+    margin-bottom: 40px;
+  }
+
+  .step-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    flex-shrink: 0;
+    position: relative;
+    top: 2px;
+  }
+
+  .step-body {
+    padding-top: 10px;
+  }
+
+  .step-body h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .step-body p {
+    color: var(--muted);
+    font-size: 14.5px;
+    margin-bottom: 14px;
+    line-height: 1.65;
+  }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .code-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .code-copy:hover {
+    color: var(--accent);
+    background: rgba(124,106,255,0.1);
+  }
+
+  pre {
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.7;
+    color: #aaaabf;
+  }
+
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .str { color: #4ade80; }
+  .cm { color: #3d3d55; font-style: italic; }
+  .num { color: #f97316; }
+  .dec { color: var(--accent2); }
+
+  /* OUTPUT BOX */
+  .output-box {
+    background: rgba(74,222,128,0.04);
+    border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--tag-green-text);
+  }
+
+  .output-box .label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(74,222,128,0.5);
+    margin-bottom: 8px;
+    display: block;
+    font-weight: 500;
+  }
+
+  /* CALLOUT */
+  .callout {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(124,106,255,0.06);
+    border: 1px solid rgba(124,106,255,0.18);
+    border-radius: 10px;
+    margin: 20px 0;
+    font-size: 14px;
+    color: rgba(232,232,240,0.8);
+    line-height: 1.6;
+  }
+
+  .callout-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .arch-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .arch-node.highlight {
+    background: rgba(124,106,255,0.12);
+    border-color: rgba(124,106,255,0.3);
+    color: var(--accent);
+  }
+
+  .arch-arrow {
+    color: var(--muted);
+    font-size: 18px;
+  }
+
+  /* PHASE TAGS */
+  .phase-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-g { background: var(--tag-green); color: var(--tag-green-text); }
+  .tag-b { background: var(--tag-blue); color: var(--tag-blue-text); }
+  .tag-p { background: var(--tag-purple); color: var(--tag-purple-text); }
+
+  /* OPTIONAL SECTION */
+  .optional-phase {
+    position: relative;
+    padding: 32px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    margin-bottom: 64px;
+  }
+
+  .optional-badge {
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* SUMMARY */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+
+  .summary-card:hover {
+    border-color: rgba(124,106,255,0.3);
+  }
+
+  .summary-card .icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .summary-card p {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .summary-card span {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* NEXT STEPS */
+  .next-steps {
+    background: linear-gradient(135deg, rgba(124,106,255,0.08), rgba(255,106,155,0.05));
+    border: 1px solid rgba(124,106,255,0.2);
+    border-radius: 14px;
+    padding: 36px;
+    margin-top: 48px;
+  }
+
+  .next-steps h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .next-steps > p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .next-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .next-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14.5px;
+    color: rgba(232,232,240,0.85);
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .next-list li:hover {
+    background: rgba(124,106,255,0.08);
+    border-color: rgba(124,106,255,0.2);
+  }
+
+  .next-list li .ni {
+    font-size: 18px;
+  }
+
+  /* DIVIDER */
+  .phase-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 56px 0;
+  }
+
+  /* STEP CONNECTOR */
+  .step-connector {
+    grid-column: 1;
+    width: 1px;
+    background: var(--border);
+    height: 32px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 48px 24px; }
+    .content { padding: 40px 24px 80px; }
+    .arch-flow { gap: 6px; }
+    .arch-node { font-size: 11px; padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="badge">AI Engineering Guide</div>
+    <h1>From Model to API —<br><em>A Practical Walkthrough</em></h1>
+    <p class="subtitle">Train a machine learning model, wrap it in a production-ready REST API, and optionally containerize it with Docker. Everything a real AI engineer does, step by step.</p>
+    <div class="meta-row">
+      <div class="meta-item">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        ~20 min setup
+      </div>
+      <div class="meta-item">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        Python · FastAPI · scikit-learn
+      </div>
+      <div class="meta-item">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Beginner → Intermediate
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- PHASE 1 -->
+  <div class="phase">
+    <div class="phase-label">
+      <span class="phase-number">Phase 01</span>
+      <span class="phase-title">Train the Model</span>
+    </div>
+
+    <div class="phase-tags">
+      <span class="tag tag-g">scikit-learn</span>
+      <span class="tag tag-b">pandas</span>
+      <span class="tag tag-p">joblib</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-body">
+        <h3>Create the project directory</h3>
+        <p>Start by creating a clean folder for your project and navigating into it.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>mkdir ai-system
+cd ai-system</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-body">
+        <h3>Create the training file</h3>
+        <p>Create an empty <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">train.py</code> file where your training logic will live.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash · windows</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>type nul > train.py</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-body">
+        <h3>Install dependencies</h3>
+        <p>Install the three core libraries needed for training and serializing your model.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>pip install scikit-learn pandas joblib</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-body">
+        <h3>Write the training script</h3>
+        <p>Your <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">train.py</code> trains a sentiment classifier and saves the result as a <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">.pkl</code> file. Here is a minimal example:</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">python · train.py</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre><span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">import</span> joblib
+
+<span class="cm"># Training data</span>
+texts  = [<span class="str">"I love this"</span>, <span class="str">"Great product"</span>, <span class="str">"Terrible"</span>, <span class="str">"Very bad"</span>]
+labels = [<span class="num">1</span>, <span class="num">1</span>, <span class="num">0</span>, <span class="num">0</span>]
+
+<span class="cm"># Build and train pipeline</span>
+model = Pipeline([
+    (<span class="str">"tfidf"</span>, TfidfVectorizer()),
+    (<span class="str">"clf"</span>,  LogisticRegression()),
+])
+model.<span class="fn">fit</span>(texts, labels)
+
+<span class="cm"># Save the trained model</span>
+joblib.<span class="fn">dump</span>(model, <span class="str">"sentiment_model.pkl"</span>)
+<span class="fn">print</span>(<span class="str">"✓ Model saved → sentiment_model.pkl"</span>)</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-body">
+        <h3>Run training</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>python train.py</pre>
+        </div>
+        <div class="output-box">
+          <span class="label">expected output</span>
+          ✓ Model saved → sentiment_model.pkl
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase-divider"></div>
+
+  <!-- PHASE 2 -->
+  <div class="phase">
+    <div class="phase-label">
+      <span class="phase-number">Phase 02</span>
+      <span class="phase-title">Build the REST API</span>
+    </div>
+
+    <div class="phase-tags">
+      <span class="tag tag-b">FastAPI</span>
+      <span class="tag tag-g">uvicorn</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">06</div>
+      <div class="step-body">
+        <h3>Install FastAPI and Uvicorn</h3>
+        <p>FastAPI is a modern, high-performance web framework. Uvicorn is the ASGI server that runs it.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>pip install fastapi uvicorn</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">07</div>
+      <div class="step-body">
+        <h3>Create the API file</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash · windows</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>type nul > main.py</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">08</div>
+      <div class="step-body">
+        <h3>Write the API</h3>
+        <p>This loads the saved model and exposes two endpoints: a health check and a prediction route.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">python · main.py</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre><span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+<span class="kw">import</span> joblib
+
+app = <span class="fn">FastAPI</span>(title=<span class="str">"Sentiment API"</span>, version=<span class="str">"1.0"</span>)
+
+<span class="cm"># Load the model once at startup</span>
+model = joblib.<span class="fn">load</span>(<span class="str">"sentiment_model.pkl"</span>)
+
+<span class="dec">@app.get</span>(<span class="str">"/"</span>)
+<span class="kw">def</span> <span class="fn">health_check</span>():
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"ok"</span>, <span class="str">"message"</span>: <span class="str">"AI Model is running 🚀"</span>}
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">def</span> <span class="fn">predict</span>(text: str):
+    label = model.<span class="fn">predict</span>([text])[<span class="num">0</span>]
+    <span class="kw">return</span> {
+        <span class="str">"input"</span>:      text,
+        <span class="str">"prediction"</span>: <span class="fn">int</span>(label),
+        <span class="str">"sentiment"</span>:  <span class="str">"positive"</span> <span class="kw">if</span> label == <span class="num">1</span> <span class="kw">else</span> <span class="str">"negative"</span>
+    }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase-divider"></div>
+
+  <!-- PHASE 3 -->
+  <div class="phase">
+    <div class="phase-label">
+      <span class="phase-number">Phase 03</span>
+      <span class="phase-title">Run &amp; Test</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">09</div>
+      <div class="step-body">
+        <h3>Start the server</h3>
+        <p>The <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">--reload</code> flag watches for file changes and restarts automatically — useful during development.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>uvicorn main:app --reload</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">10</div>
+      <div class="step-body">
+        <h3>Verify the health endpoint</h3>
+        <p>Open a browser and visit the root URL.</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">url</span></div>
+          <pre>http://127.0.0.1:8000</pre>
+        </div>
+        <div class="output-box">
+          <span class="label">response</span>
+          {"status": "ok", "message": "AI Model is running 🚀"}
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">11</div>
+      <div class="step-body">
+        <h3>Test with interactive docs</h3>
+        <p>FastAPI generates a Swagger UI automatically. Navigate to <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">/docs</code>, open the <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">POST /predict</code> endpoint, click <strong>Try it out</strong>, and send a text like:</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">url</span></div>
+          <pre>http://127.0.0.1:8000/docs</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">request body</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>"I love this product"</pre>
+        </div>
+        <div class="output-box">
+          <span class="label">response</span>
+          {"input": "I love this product", "prediction": 1, "sentiment": "positive"}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase-divider"></div>
+
+  <!-- ARCHITECTURE DIAGRAM -->
+  <div class="phase">
+    <div class="phase-label">
+      <span class="phase-number">System</span>
+      <span class="phase-title">How it all fits together</span>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-flow">
+        <div class="arch-node">Client / Browser</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node highlight">FastAPI Server</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node highlight">sentiment_model.pkl</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">Prediction Response</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">💡</span>
+      <span>The model is loaded into memory <strong>once</strong> when the server starts — not on every request. This keeps inference fast and avoids unnecessary disk I/O.</span>
+    </div>
+  </div>
+
+  <div class="phase-divider"></div>
+
+  <!-- PHASE 4 — OPTIONAL DOCKER -->
+  <div class="optional-phase">
+    <span class="optional-badge">Optional · Phase 04</span>
+
+    <div class="phase-label" style="margin-top:16px">
+      <span class="phase-number">Phase 04</span>
+      <span class="phase-title">Containerize with Docker</span>
+    </div>
+
+    <p style="color:var(--muted);font-size:14.5px;margin-bottom:24px;line-height:1.65">Use Docker when you need to ship the project to a server, share it with a team, or ensure it runs identically on any machine — regardless of local Python installations.</p>
+
+    <div class="step">
+      <div class="step-num">12</div>
+      <div class="step-body">
+        <h3>Create the Dockerfile</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash · windows</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre>type nul > Dockerfile</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">13</div>
+      <div class="step-body">
+        <h3>Write the Dockerfile</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">dockerfile</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre><span class="kw">FROM</span> python:3.10-slim
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="kw">COPY</span> . .
+
+<span class="kw">RUN</span> pip install --no-cache-dir \
+    scikit-learn pandas joblib fastapi uvicorn
+
+<span class="kw">EXPOSE</span> 8000
+
+<span class="kw">CMD</span> ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">14</div>
+      <div class="step-body">
+        <h3>Build and run</h3>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+          <pre><span class="cm"># Build the image</span>
+docker build -t ai-model .
+
+<span class="cm"># Run the container</span>
+docker run -p 8000:8000 ai-model</pre>
+        </div>
+        <p style="font-size:14px;color:var(--muted);margin-top:10px">The API is now accessible at <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3)">http://localhost:8000</code> — running inside an isolated container.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="phase">
+    <div class="phase-label">
+      <span class="phase-number">Summary</span>
+      <span class="phase-title">What you built</span>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="icon">🧠</div>
+        <p>Trained a model</p>
+        <span>scikit-learn pipeline with TF-IDF + LogReg</span>
+      </div>
+      <div class="summary-card">
+        <div class="icon">📦</div>
+        <p>Serialized it</p>
+        <span>Saved to disk as sentiment_model.pkl</span>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🔌</div>
+        <p>Exposed it as an API</p>
+        <span>FastAPI with health check + predict endpoint</span>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🌐</div>
+        <p>Ran it as a server</p>
+        <span>Uvicorn ASGI server with live reload</span>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🐳</div>
+        <p>Containerized it</p>
+        <span>Docker image deployable anywhere</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT STEPS -->
+  <div class="next-steps">
+    <h2>Where to go next</h2>
+    <p>You have the core pipeline working. Here are logical next steps depending on your goal.</p>
+    <ul class="next-list">
+      <li><span class="ni">⚛️</span> Build a React frontend that calls your API in real time</li>
+      <li><span class="ni">📊</span> Add a dashboard to visualize predictions and model confidence</li>
+      <li><span class="ni">🤖</span> Upgrade to an AI Agent that can reason across multiple steps</li>
+      <li><span class="ni">☁️</span> Deploy to a cloud provider (Railway, Render, AWS, GCP)</li>
+      <li><span class="ni">🔐</span> Add authentication, rate limiting, and request logging</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = 'copied!';
+    setTimeout(() => btn.textContent = 'copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
